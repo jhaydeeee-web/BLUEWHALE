@@ -29,7 +29,10 @@ type RoutingResult struct {
 	DestinationError       *DestinationError `json:"destinationError,omitempty"`
 }
 
+// DestinationError describes why a destination could not be parsed. It is
+// only populated (non-nil) when an error occurs; RoutingResult omits it from
+// JSON otherwise, and empty Code/Message fields are likewise omitted.
 type DestinationError struct {
-	Code    address.ErrorCode `json:"code"`
-	Message string            `json:"message"`
+	Code    address.ErrorCode `json:"code,omitempty"`
+	Message string            `json:"message,omitempty"`
 }
