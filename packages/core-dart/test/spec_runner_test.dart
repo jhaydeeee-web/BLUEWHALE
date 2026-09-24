@@ -95,7 +95,7 @@ void main() {
             );
 
             try {
-              final result = await extractRouting(routingInput);
+              final result = extractRouting(routingInput);
 
               expect(result.destinationBaseAccount,
                   normalizeExpectedBaseAccount(expected['destinationBaseAccount']));

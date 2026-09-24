@@ -59,7 +59,7 @@ JS `Number` — parse from the original string with `SafeRoutingId.parse`.
 ### Web-safe accessors on `RoutingResult`
 
 ```dart
-final result = extractRoutingSync(RoutingInput(
+final result = extractRouting(RoutingInput(
   destination: 'GAYCUYT…',
   memoType: 'id',
   memoValue: '9007199254740993',
@@ -70,7 +70,7 @@ result.idString; // '9007199254740993' — web-safe string form
 result.safeId;   // SafeRoutingId wrapper
 ```
 
-Internally, `extractRoutingSync` and the MEMO_ID / MEMO_TEXT normalizers
+Internally, `extractRouting` and the MEMO_ID / MEMO_TEXT normalizers
 validate uint64 range on the decimal string itself (length and lexicographic
 comparison), never via `int`, so browser builds cannot silently truncate
 massive routing IDs during parsing.

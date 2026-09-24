@@ -9,7 +9,7 @@ void main() {
   print('int.parse(2^53+1)      : ${int.parse('9007199254740993')}');
 
   // The fix: string-exact routing extraction.
-  final r = extractRoutingSync(RoutingInput(
+  final r = extractRouting(RoutingInput(
     destination: g,
     memoType: 'id',
     memoValue: '9007199254740993',
@@ -19,7 +19,7 @@ void main() {
   print('safeId.exceedsJsSafe   : ${r.safeId!.exceedsJsSafeRange}');
 
   // uint64 ceiling.
-  final max = extractRoutingSync(RoutingInput(
+  final max = extractRouting(RoutingInput(
     destination: g,
     memoType: 'id',
     memoValue: '18446744073709551615',
@@ -27,7 +27,7 @@ void main() {
   print('uint64 max idString    : ${max.idString}');
 
   // Muxed vector with the 2^53+1 canary.
-  final m = extractRoutingSync(RoutingInput(
+  final m = extractRouting(RoutingInput(
     destination:
         'MAYCUYT553C5LHVE2XPW5GMEJT4BXGM7AHMJWLAPZP53KJO7EIQACABAAAAAAAAAAEVIG',
     memoType: 'none',

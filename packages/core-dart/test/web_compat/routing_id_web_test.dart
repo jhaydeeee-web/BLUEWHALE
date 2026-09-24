@@ -101,7 +101,7 @@ void main() {
     for (final entry in muxedVectors.entries) {
       final idText = entry.key;
       test('G-address + MEMO_ID "$idText" parses exactly', () {
-        final result = extractRoutingSync(RoutingInput(
+        final result = extractRouting(RoutingInput(
           destination: baseG,
           memoType: 'id',
           memoValue: idText,
@@ -118,7 +118,7 @@ void main() {
 
     test('MEMO_TEXT numeric routing ID stays exact above 2^53', () {
       const idText = '18446744073709551615'; // uint64 max
-      final result = extractRoutingSync(RoutingInput(
+      final result = extractRouting(RoutingInput(
         destination: baseG,
         memoType: 'text',
         memoValue: idText,
@@ -131,7 +131,7 @@ void main() {
 
     test('out-of-range MEMO_ID (uint64 max + 1) is rejected, not truncated',
         () {
-      final result = extractRoutingSync(RoutingInput(
+      final result = extractRouting(RoutingInput(
         destination: baseG,
         memoType: 'id',
         memoValue: '18446744073709551616',
@@ -148,7 +148,7 @@ void main() {
     });
 
     test('leading-zero MEMO_ID normalizes with a warning, exactly', () {
-      final result = extractRoutingSync(RoutingInput(
+      final result = extractRouting(RoutingInput(
         destination: baseG,
         memoType: 'id',
         memoValue: '09007199254740993',
@@ -178,8 +178,8 @@ void main() {
             reason: 'Muxed decode must not truncate "$idText" on web.');
       });
 
-      test('extractRoutingSync routes muxed "$mAddress" to $idText', () {
-        final result = extractRoutingSync(
+      test('extractRouting routes muxed "$mAddress" to $idText', () {
+        final result = extractRouting(
           RoutingInput(destination: mAddress, memoType: 'none'),
         );
         expect(result.source, equals(RoutingSource.muxed));
@@ -199,7 +199,7 @@ void main() {
     });
 
     test('RoutingResult.safeId round-trips through JSON exactly', () {
-      final result = extractRoutingSync(RoutingInput(
+      final result = extractRouting(RoutingInput(
         destination: baseG,
         memoType: 'id',
         memoValue: '18446744073709551615',

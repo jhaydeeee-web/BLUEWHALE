@@ -165,7 +165,7 @@ void main() {
 
   group('RoutingResult web-safe accessors', () {
     test('idString / safeId expose exact decimal strings', () {
-      final result = extractRoutingSync(RoutingInput(
+      final result = extractRouting(RoutingInput(
         destination: baseG,
         memoType: 'id',
         memoValue: '9007199254740993',
@@ -179,7 +179,7 @@ void main() {
     });
 
     test('idString / safeId are null when no routing ID resolved', () {
-      final result = extractRoutingSync(RoutingInput(
+      final result = extractRouting(RoutingInput(
         destination: baseG,
         memoType: 'none',
       ));
@@ -190,7 +190,7 @@ void main() {
 
     test('uint64-max MEMO_ID routes exactly through every accessor', () {
       const idText = '18446744073709551615';
-      final result = extractRoutingSync(RoutingInput(
+      final result = extractRouting(RoutingInput(
         destination: baseG,
         memoType: 'id',
         memoValue: idText,

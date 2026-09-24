@@ -23,7 +23,7 @@ class AnalyzeAddress {
     DestinationError? error;
 
     try {
-      result = extractRoutingSync(RoutingInput(
+      result = extractRouting(RoutingInput(
         destination: address,
         memoType: memoType ?? 'none',
         memoValue: memoValue,

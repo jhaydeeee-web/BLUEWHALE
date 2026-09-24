@@ -21,9 +21,9 @@ void main() async {
   final decoded = MuxedAddress.decode(mAddress);
   print('Decoded ID: ${decoded.id}'); // 12345
 
-  // 5. Extract routing information from an incoming payment (async API)
+  // 5. Extract routing information from an incoming payment (synchronous).
   // This is used to reconcile deposits in a pooled account.
-  final result = await extractRouting(RoutingInput(
+  final result = extractRouting(RoutingInput(
     destination: mAddress,
     memoType: 'none',
     memoValue: null,
@@ -32,13 +32,15 @@ void main() async {
   print('Routing ID: ${result.id}'); // 12345
   print('Routing Source: ${result.source}'); // RoutingSource.muxed
 
-  // 6. Synchronous variant for pure string parsing
-  final syncResult = extractRoutingSync(RoutingInput(
-    destination: mAddress,
-    memoType: 'none',
-    memoValue: null,
-  ));
+  // 6. Async variant with an optional SEP-0029 memo-requirement check.
+  final asyncResult = await extractRoutingAsync(
+    RoutingInput(
+      destination: gAddress,
+      memoType: 'none',
+      memoValue: null,
+    ),
+    fetchMemoRequirement: (baseAccount) async => false,
+  );
 
-  print('Sync Routing ID: ${syncResult.id}'); // 12345
-  print('Sync Routing Source: ${syncResult.source}'); // RoutingSource.muxed
+  print('Async Routing Source: ${asyncResult.source}'); // RoutingSource.none
 }

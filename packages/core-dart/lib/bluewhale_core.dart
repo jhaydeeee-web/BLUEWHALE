@@ -1,3 +1,10 @@
+/// Stellar address parsing, muxed-account encoding and deposit routing.
+///
+/// Routing entry points (exported from `src/routing/extract.dart`):
+/// - [extractRouting]: primary, synchronous routing extraction.
+/// - [extractRoutingAsync]: async variant supporting network checks such as
+///   SEP-0029 memo requirements.
+/// - `extractRoutingSync`: deprecated alias of [extractRouting].
 library bluewhale_core;
 
 export 'src/address/stellar_address.dart';

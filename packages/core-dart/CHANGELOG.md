@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+- **Breaking:** `extractRouting(RoutingInput input)` is now the primary
+  **synchronous** function, matching `extractRouting` in TypeScript and
+  `ExtractRouting` in Go. Remove `await` at existing call sites.
+- Added `extractRoutingAsync(RoutingInput input, {fetchMemoRequirement})`
+  for async network checks (SEP-0029 memo requirement). This replaces the
+  previous async `extractRouting(..., fetchMemoRequirement: ...)` signature.
+- Deprecated `extractRoutingSync`; it now delegates to `extractRouting` and
+  will be removed in the next major release. Migrate by renaming
+  `extractRoutingSync(input)` to `extractRouting(input)`.
+
 ## 1.1.0
 
 - **Flutter Web precision safety for 64-bit routing IDs.**

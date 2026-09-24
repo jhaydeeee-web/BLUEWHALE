@@ -6,9 +6,9 @@ void main() {
   const muxedAddress =
       'MAYCUYT553C5LHVE2XPW5GMEJT4BXGM7AHMJWLAPZP53KJO7EIQACABAAAAAAAAAAEVIG';
 
-  group('extractRoutingSync', () {
+  group('extractRouting (sync)', () {
     test('decodes muxed routing when no external memo is present', () {
-      final result = extractRoutingSync(
+      final result = extractRouting(
         RoutingInput(destination: muxedAddress, memoType: 'none'),
       );
 
@@ -20,7 +20,7 @@ void main() {
     });
 
     test('prefers external memo over muxed routing and emits memo-ignored warning', () {
-      final result = extractRoutingSync(
+      final result = extractRouting(
         RoutingInput(
           destination: muxedAddress,
           memoType: 'id',
@@ -37,7 +37,7 @@ void main() {
     });
 
     test('keeps muxed decode valid when external memo is unroutable', () {
-      final result = extractRoutingSync(
+      final result = extractRouting(
         RoutingInput(
           destination: muxedAddress,
           memoType: 'text',
@@ -56,7 +56,7 @@ void main() {
     });
 
     test('preserves existing non-muxed memo routing behavior', () {
-      final result = extractRoutingSync(
+      final result = extractRouting(
         RoutingInput(
           destination: baseG,
           memoType: 'id',
@@ -74,23 +74,23 @@ void main() {
     test('throws ExtractRoutingException for C-addresses', () {
       const cAddress = 'CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC';
       expect(
-        () => extractRoutingSync(RoutingInput(destination: cAddress, memoType: 'none')),
+        () => extractRouting(RoutingInput(destination: cAddress, memoType: 'none')),
         throwsA(isA<ExtractRoutingException>()),
       );
     });
 
     test('throws ExtractRoutingException for empty destination', () {
       expect(
-        () => extractRoutingSync(RoutingInput(destination: '', memoType: 'none')),
+        () => extractRouting(RoutingInput(destination: '', memoType: 'none')),
         throwsA(isA<ExtractRoutingException>()),
       );
     });
   });
 
-  group('extractRouting (async)', () {
+  group('extractRoutingAsync', () {
     test('decodes muxed routing when no external memo is present', () async {
       await expectLater(
-        extractRouting(RoutingInput(destination: muxedAddress, memoType: 'none')),
+        extractRoutingAsync(RoutingInput(destination: muxedAddress, memoType: 'none')),
         completion(predicate((RoutingResult result) =>
             result.destinationBaseAccount == baseG &&
             result.id == BigInt.parse('9007199254740993') &&
@@ -102,7 +102,7 @@ void main() {
 
     test('prefers external memo over muxed routing and emits memo-ignored warning', () async {
       await expectLater(
-        extractRouting(RoutingInput(
+        extractRoutingAsync(RoutingInput(
           destination: muxedAddress,
           memoType: 'id',
           memoValue: '42',
@@ -119,7 +119,7 @@ void main() {
 
     test('keeps muxed decode valid when external memo is unroutable', () async {
       await expectLater(
-        extractRouting(RoutingInput(
+        extractRoutingAsync(RoutingInput(
           destination: muxedAddress,
           memoType: 'text',
           memoValue: 'not-a-routing-id',
@@ -137,7 +137,7 @@ void main() {
 
     test('preserves existing non-muxed memo routing behavior', () async {
       await expectLater(
-        extractRouting(RoutingInput(
+        extractRoutingAsync(RoutingInput(
           destination: baseG,
           memoType: 'id',
           memoValue: '100',
@@ -154,16 +154,48 @@ void main() {
     test('propagates ExtractRoutingException for C-addresses as a Future error', () async {
       const cAddress = 'CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC';
       await expectLater(
-        () => extractRouting(RoutingInput(destination: cAddress, memoType: 'none')),
+        () => extractRoutingAsync(RoutingInput(destination: cAddress, memoType: 'none')),
         throwsA(isA<ExtractRoutingException>()),
       );
     });
 
     test('propagates ExtractRoutingException for empty destination as a Future error', () async {
       await expectLater(
-        () => extractRouting(RoutingInput(destination: '', memoType: 'none')),
+        () => extractRoutingAsync(RoutingInput(destination: '', memoType: 'none')),
         throwsA(isA<ExtractRoutingException>()),
       );
+    });
+
+    test('appends missing-required-memo warning when fetcher reports it', () async {
+      final result = await extractRoutingAsync(
+        RoutingInput(destination: baseG, memoType: 'none'),
+        fetchMemoRequirement: (_) async => true,
+      );
+
+      expect(result.id, isNull);
+      expect(result.warnings, contains(RoutingWarning.missingRequiredMemo));
+    });
+
+    test('fails open when the memo requirement fetcher throws', () async {
+      final result = await extractRoutingAsync(
+        RoutingInput(destination: baseG, memoType: 'none'),
+        fetchMemoRequirement: (_) async => throw StateError('network down'),
+      );
+
+      expect(result.warnings, isEmpty);
+    });
+  });
+
+  group('extractRoutingSync (deprecated)', () {
+    test('delegates to extractRouting', () {
+      final input = RoutingInput(destination: muxedAddress, memoType: 'none');
+      // ignore: deprecated_member_use_from_same_package
+      final legacy = extractRoutingSync(input);
+      final current = extractRouting(input);
+
+      expect(legacy.destinationBaseAccount, current.destinationBaseAccount);
+      expect(legacy.id, current.id);
+      expect(legacy.source, current.source);
     });
   });
 }

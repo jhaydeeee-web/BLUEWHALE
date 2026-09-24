@@ -16,10 +16,14 @@ import 'safe_routing_id.dart';
 /// [RoutingResult.safeId] accessors, MEMO_IDs and muxed IDs up to the
 /// uint64 ceiling survive Flutter Web without truncation.
 ///
-/// This is the synchronous variant for pure string parsing.
-/// For future compatibility with async network checks (Federation, SEP-0029),
-/// use [extractRouting] instead.
-RoutingResult extractRoutingSync(RoutingInput input) {
+/// This is the primary, synchronous entry point and mirrors `extractRouting`
+/// in the TypeScript SDK and `ExtractRouting` in the Go SDK. It performs pure
+/// string parsing only; for async network checks (e.g. SEP-0029 memo
+/// requirements) use [extractRoutingAsync].
+///
+/// Throws [ExtractRoutingException] when the destination is empty or is not
+/// a G or M address.
+RoutingResult extractRouting(RoutingInput input) {
   final trimmed = input.destination.trim();
   if (trimmed.isEmpty) {
     throw const ExtractRoutingException('Invalid input: destination must be a non-empty string.');
@@ -228,20 +232,26 @@ RoutingResult extractRoutingSync(RoutingInput input) {
   );
 }
 
-/// Extracts deposit routing information with support for future
-/// async network checks (Federation, SEP-0029).
-///
-/// Currently delegates to [extractRoutingSync]; when async capabilities
-/// are added this function will perform the additional checks.
+/// Retrieves whether a destination account requires a routing memo
+/// (SEP-0029). Implementations can use Horizon, an indexer, or a cache.
 typedef MemoRequirementFetcher = Future<bool> Function(String baseAccount);
 
-/// Performs routing extraction and optionally checks a destination's SEP-0029
-/// memo requirement. Fetch failures fail open to preserve parser behavior.
-Future<RoutingResult> extractRouting(
+/// Asynchronous variant of [extractRouting] that can additionally perform
+/// network checks.
+///
+/// When [fetchMemoRequirement] is provided and the destination is a classic
+/// account with no routing ID, it is consulted to determine whether the
+/// account requires a memo (SEP-0029); if so,
+/// [RoutingWarning.missingRequiredMemo] is appended. Fetch failures fail open,
+/// returning the same result as [extractRouting].
+///
+/// Parsing errors are reported as a failed [Future] with an
+/// [ExtractRoutingException].
+Future<RoutingResult> extractRoutingAsync(
   RoutingInput input, {
   MemoRequirementFetcher? fetchMemoRequirement,
 }) async {
-  final result = extractRoutingSync(input);
+  final result = extractRouting(input);
   if (fetchMemoRequirement == null ||
       result.destinationBaseAccount == null ||
       result.id != null ||
@@ -264,3 +274,24 @@ Future<RoutingResult> extractRouting(
   }
   return result;
 }
+
+/// Synchronous routing extraction.
+///
+/// **Deprecated:** [extractRouting] is now synchronous, so this alias is no
+/// longer needed. Migrate by renaming the call:
+///
+/// ```dart
+/// // Before
+/// final result = extractRoutingSync(input);
+/// // After
+/// final result = extractRouting(input);
+/// ```
+///
+/// Code that previously awaited `extractRouting(...)` should either drop the
+/// `await` or, if it needs SEP-0029 memo checks, call [extractRoutingAsync].
+@Deprecated(
+  'extractRouting is now synchronous; use extractRouting(input) instead. '
+  'For async network checks use extractRoutingAsync. '
+  'extractRoutingSync will be removed in the next major release.',
+)
+RoutingResult extractRoutingSync(RoutingInput input) => extractRouting(input);
