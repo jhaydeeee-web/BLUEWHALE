@@ -360,3 +360,43 @@ func routingIDEqual(a, b *RoutingID) bool {
 	}
 	return a.String() == b.String()
 }
+
+func TestNormalizeUnsupportedMemoType(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]string{
+		"hash":             "hash",
+		"return":           "return",
+		"none":             "",
+		"id":               "",
+		"text":             "",
+		"":                 "",
+		"MEMO_HASH":        "hash",
+		"memo-return":      "return",
+		"Memo_Return":      "return",
+		"memohash":         "hash",
+		"m_e_m_o_h_a_s_h":  "hash",
+		"HASH":             "",
+		"memo_hash_extra":  "",
+		"memo_returnx":     "",
+		"something-longer": "",
+		"___":              "",
+	}
+
+	for input, want := range testCases {
+		if got := normalizeUnsupportedMemoType(input); got != want {
+			t.Errorf("normalizeUnsupportedMemoType(%q) = %q, want %q", input, got, want)
+		}
+	}
+}
+
+func TestNormalizeUnsupportedMemoTypeDoesNotAllocate(t *testing.T) {
+	for _, input := range []string{"hash", "return", "none", "id", "text", "MEMO_HASH", "memo-return", "unknown_type_value"} {
+		allocs := testing.AllocsPerRun(100, func() {
+			_ = normalizeUnsupportedMemoType(input)
+		})
+		if allocs != 0 {
+			t.Errorf("normalizeUnsupportedMemoType(%q) allocs = %v, want 0", input, allocs)
+		}
+	}
+}

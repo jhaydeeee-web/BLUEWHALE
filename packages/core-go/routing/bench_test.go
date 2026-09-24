@@ -141,3 +141,31 @@ func BenchmarkExtractRouting_MAddr_Parallel(b *testing.B) {
 		}
 	})
 }
+
+// BenchmarkNormalizeUnsupportedMemoType covers the canonical fast path, the
+// alias normalization path, and the early rejection of over-long inputs.
+// Every case should report 0 allocs/op.
+func BenchmarkNormalizeUnsupportedMemoType(b *testing.B) {
+	cases := []struct {
+		name  string
+		input string
+	}{
+		{"hash", "hash"},
+		{"return", "return"},
+		{"none", "none"},
+		{"id", "id"},
+		{"text", "text"},
+		{"MEMO_HASH", "MEMO_HASH"},
+		{"memo-return", "memo-return"},
+		{"unknown", "custom"},
+		{"too_long", "definitely_not_a_memo_type"},
+	}
+	for _, tc := range cases {
+		b.Run(tc.name, func(b *testing.B) {
+			b.ReportAllocs()
+			for i := 0; i < b.N; i++ {
+				_ = normalizeUnsupportedMemoType(tc.input)
+			}
+		})
+	}
+}

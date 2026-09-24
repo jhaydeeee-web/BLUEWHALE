@@ -8,29 +8,44 @@ import (
 	"github.com/REDISHFISH/BLUEWHALE/packages/core-go/muxed"
 )
 
+// maxUnsupportedMemoTypeLen is the length of the longest normalized alias
+// recognized by normalizeUnsupportedMemoType ("memoreturn").
+const maxUnsupportedMemoTypeLen = len("memoreturn")
+
 // normalizeUnsupportedMemoType canonicalizes a memo type string by lower-casing it
 // and stripping underscores and hyphens, then maps it to a known unsupported type.
-// Uses strings.Builder to avoid intermediate string allocations from chained ReplaceAll/ToLower.
+//
+// It never allocates: common canonical memo types are resolved by direct
+// equality, and aliases such as "MEMO_HASH" are normalized into a fixed-size
+// stack buffer. Inputs longer than any known alias are rejected up front.
 func normalizeUnsupportedMemoType(memoType string) string {
+	// Fast path for the canonical memo types.
 	switch memoType {
 	case "hash", "return":
 		return memoType
+	case "none", "id", "text", "":
+		return ""
 	}
 
-	var sb strings.Builder
-	sb.Grow(len(memoType))
+	var buf [maxUnsupportedMemoTypeLen]byte
+	n := 0
 	for i := 0; i < len(memoType); i++ {
 		c := memoType[i]
 		if c == '_' || c == '-' {
 			continue
 		}
+		if n == len(buf) {
+			return ""
+		}
 		if 'A' <= c && c <= 'Z' {
 			c += 'a' - 'A'
 		}
-		sb.WriteByte(c)
+		buf[n] = c
+		n++
 	}
 
-	switch sb.String() {
+	// The compiler does not allocate for string(bytes) used only in a comparison.
+	switch string(buf[:n]) {
 	case "memohash":
 		return "hash"
 	case "memoreturn":
