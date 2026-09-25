@@ -18,10 +18,10 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dart-lang/setup-dart@v1
       - id: setup-chrome
-        uses: browser-actions/setup-chrome@v1
+        uses: browser-actions/setup-chrome@v2
       - run: cd packages/core-dart && dart pub get
       - run: cd packages/core-dart && dart test --coverage=coverage
       - run: cd packages/core-dart && dart run coverage:format_coverage --lcov --in=coverage --out=coverage/lcov.info --report-on=lib
@@ -29,7 +29,7 @@ jobs:
         env:
           CHROME_EXECUTABLE: ${{ steps.setup-chrome.outputs.chrome-path }}
       - name: Upload Dart coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v7
         with:
           flags: dart
           files: packages/core-dart/coverage/lcov.info

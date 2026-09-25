@@ -10,7 +10,7 @@ jobs:
     name: Run rust-address-fuzzer
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -22,7 +22,7 @@ jobs:
 
       - name: Upload Reproducer
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: fuzzer-findings
           path: examples/rust-address-fuzzer/findings/
@@ -34,15 +34,15 @@ jobs:
     # reported and uploaded without blocking the PR.
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v3
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
         with:
           version: 8
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 20
           cache: "pnpm"
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version: "1.22"
       - uses: dart-lang/setup-dart@v1
@@ -52,7 +52,7 @@ jobs:
 
       - name: Upload mismatch log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: differential-mismatches
           path: examples/rust-address-fuzzer/findings/differential-mismatches.jsonl

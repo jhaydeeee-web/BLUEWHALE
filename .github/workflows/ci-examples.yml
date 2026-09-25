@@ -25,8 +25,8 @@ jobs:
       run:
         working-directory: examples/go-payment-listener
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version-file: examples/go-payment-listener/go.mod
           cache-dependency-path: examples/go-payment-listener/go.sum
@@ -48,8 +48,8 @@ jobs:
       run:
         working-directory: examples/django-anchor-router
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
@@ -69,8 +69,8 @@ jobs:
       run:
         working-directory: examples/python-compliance-logger
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
       - run: ./run_tests.sh

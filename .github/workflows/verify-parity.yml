@@ -29,11 +29,11 @@ jobs:
     name: core-ts parity
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
         with:
           version: 9
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 20
           cache: "pnpm"
@@ -44,8 +44,8 @@ jobs:
     name: core-go parity
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version: "1.22"
       - run: cd packages/core-go && go test ./...
@@ -54,10 +54,10 @@ jobs:
     name: core-dart parity
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dart-lang/setup-dart@v1
       - id: setup-chrome
-        uses: browser-actions/setup-chrome@v1
+        uses: browser-actions/setup-chrome@v2
       - run: cd packages/core-dart && dart pub get
       - run: cd packages/core-dart && dart test
       - run: cd packages/core-dart && dart test test/web_compat --platform chrome
