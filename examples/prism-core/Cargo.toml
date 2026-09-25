@@ -22,4 +22,4 @@ diff = ["dep:stellar-strkey", "dep:clap", "dep:rand"]
 [dependencies]
 stellar-strkey = { version = "0.0.18", optional = true }
 clap = { version = "4", features = ["derive"], optional = true }
-rand = { version = "0.8", optional = true }
+rand = { version = "0.10", optional = true }
