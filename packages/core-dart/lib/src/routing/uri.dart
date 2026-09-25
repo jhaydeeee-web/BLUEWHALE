@@ -27,19 +27,46 @@ enum UriRoutingErrorCode {
 }
 
 /// Decoded parameters of a SEP-0007 `pay` URI.
+///
+/// Every field except [destination] is optional; an absent parameter is
+/// `null` rather than an empty string. Values are percent-decoded, and
+/// [memoType] keeps its wire spelling (e.g. `MEMO_ID`) rather than the
+/// internal routing type (`id`).
 class Sep7PayParams {
+  /// The `destination` query parameter. Required, and already trimmed.
   final String destination;
+
+  /// The requested `amount`, as written.
   final String? amount;
+
+  /// The asset code, e.g. `USDC`.
   final String? assetCode;
+
+  /// The asset issuer G-address.
   final String? assetIssuer;
+
+  /// The raw `memo` value, if present.
   final String? memo;
+
+  /// The SEP-0007 `memo_type` spelling, e.g. `MEMO_ID`.
   final String? memoType;
+
+  /// A URL the wallet should call after payment.
   final String? callback;
+
+  /// A human-readable message to display.
   final String? msg;
+
+  /// The network passphrase hint, when the sender pins one.
   final String? networkPassphrase;
+
+  /// The origin domain of the request, for domain-signed requests.
   final String? originDomain;
+
+  /// The signature over the request, when present.
   final String? signature;
 
+  /// Creates a parameter set; only [destination] is required.
   const Sep7PayParams({
     required this.destination,
     this.amount,
@@ -62,9 +89,16 @@ class Sep7PayParams {
 /// content, so they are safe to log even when the URI carries memos or
 /// signatures.
 final class UriRoutingResult {
+  /// The routing result; non-null exactly when [isSuccess] is true.
   final RoutingResult? routing;
+
+  /// The decoded query parameters; non-null exactly when [isSuccess] is true.
   final Sep7PayParams? params;
+
+  /// Why parsing failed; non-null exactly when [isSuccess] is false.
   final UriRoutingErrorCode? errorCode;
+
+  /// A URI-content-free description of [errorCode].
   final String? errorMessage;
 
   const UriRoutingResult._success(RoutingResult this.routing, Sep7PayParams this.params)
@@ -75,6 +109,7 @@ final class UriRoutingResult {
       : routing = null,
         params = null;
 
+  /// Whether the URI was parsed into a [routing] result.
   bool get isSuccess => errorCode == null;
 
   @override

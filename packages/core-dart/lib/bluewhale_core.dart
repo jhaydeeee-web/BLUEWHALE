@@ -28,7 +28,7 @@
 /// - **Codes:** [ErrorCode], [WarningCode], [WarningSeverity], [Warning].
 /// - **Exceptions:** [StellarAddressException], [ExtractRoutingException].
 /// - **Platform:** [isWebJsRuntime].
-library bluewhale_core;
+library;
 
 // Addresses
 export 'src/address/codes.dart';

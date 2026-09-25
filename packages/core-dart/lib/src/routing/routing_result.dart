@@ -202,6 +202,8 @@ class RoutingInput {
   /// the result. Defaults to `info` (all warnings are returned).
   final String? minSeverityLevel;
 
+  /// Creates an input. [memoValue], [sourceAccount] and [minSeverityLevel]
+  /// are optional; see [RoutingResult] for how the result is produced.
   RoutingInput({
     required this.destination,
     required this.memoType,

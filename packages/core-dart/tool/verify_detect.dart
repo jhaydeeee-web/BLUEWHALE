@@ -1,5 +1,5 @@
-import '../lib/src/address/detect.dart';
-import '../lib/src/address/codes.dart';
+import 'package:bluewhale_core/src/address/codes.dart';
+import 'package:bluewhale_core/src/address/detect.dart';
 
 void main() {
   // Test cases from spec

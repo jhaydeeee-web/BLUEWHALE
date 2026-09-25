@@ -1,8 +1,9 @@
 /// Comprehensive test demonstrating the detect() implementation
 /// This file validates all acceptance criteria are met.
+library;
 
-import '../lib/src/address/detect.dart';
-import '../lib/src/address/codes.dart';
+import 'package:bluewhale_core/src/address/codes.dart';
+import 'package:bluewhale_core/src/address/detect.dart';
 
 void main() {
   print('='.repeat(70));

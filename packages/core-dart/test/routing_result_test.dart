@@ -67,9 +67,10 @@ void main() {
       );
 
       final json = result.toJson();
-      expect(json['destinationError'], isNotNull);
-      expect(json['destinationError']['code'], equals('INVALID_CHECKSUM'));
-      expect(json['destinationError']['message'], equals('Checksum mismatch'));
+      final destinationError =
+          json['destinationError'] as Map<String, dynamic>;
+      expect(destinationError['code'], equals('INVALID_CHECKSUM'));
+      expect(destinationError['message'], equals('Checksum mismatch'));
     });
 
     test('toJson serializes warnings with code, severity, and message', () {
@@ -87,10 +88,11 @@ void main() {
       final json = result.toJson();
       final warnings = json['warnings'] as List<dynamic>;
       expect(warnings, hasLength(1));
-      expect(warnings[0]['code'], equals('MEMO_PRESENT_WITH_MUXED'));
-      expect(warnings[0]['severity'], equals('warn'));
+      final warning = warnings.first as Map<String, dynamic>;
+      expect(warning['code'], equals('MEMO_PRESENT_WITH_MUXED'));
+      expect(warning['severity'], equals('warn'));
       expect(
-        warnings[0]['message'],
+        warning['message'],
         equals('Routing ID found in both M-address and Memo.'),
       );
     });
