@@ -220,23 +220,61 @@ describe("MEMO_ID_INVALID_FORMAT warning", () => {
   });
 });
 
-// ─── 5. MEMO_TEXT_UNROUTABLE ──────────────────────────────────────────────────
+// ─── 5. UNSUPPORTED_MEMO_TYPE / MEMO_TEXT_UNROUTABLE ──────────────────────────
 
-describe("MEMO_TEXT_UNROUTABLE warning", () => {
-  it("emits MEMO_TEXT_UNROUTABLE for memoType 'hash'", () => {
+describe("UNSUPPORTED_MEMO_TYPE warning", () => {
+  // A memo type that cannot carry a routing ID is reported as
+  // UNSUPPORTED_MEMO_TYPE with the `context.memoType` that spec/schema.json
+  // requires. MEMO_TEXT_UNROUTABLE is reserved for an actual MEMO_TEXT value
+  // that is not a numeric uint64.
+  it("emits UNSUPPORTED_MEMO_TYPE for memoType 'hash'", () => {
     const result = extractRouting(input(G_ADDRESS, "hash", "abc123"));
     const codes = result.warnings.map((w: Warning) => w.code);
-    expect(codes).toContain("MEMO_TEXT_UNROUTABLE");
+    expect(codes).toContain("UNSUPPORTED_MEMO_TYPE");
+    expect(codes).not.toContain("MEMO_TEXT_UNROUTABLE");
   });
 
-  it("emits MEMO_TEXT_UNROUTABLE for memoType 'return'", () => {
+  it("emits UNSUPPORTED_MEMO_TYPE for memoType 'return'", () => {
     const result = extractRouting(input(G_ADDRESS, "return", "abc123"));
     const codes = result.warnings.map((w: Warning) => w.code);
+    expect(codes).toContain("UNSUPPORTED_MEMO_TYPE");
+    expect(codes).not.toContain("MEMO_TEXT_UNROUTABLE");
+  });
+
+  it("emits UNSUPPORTED_MEMO_TYPE with context.memoType 'unknown' for an unrecognized memo type", () => {
+    const result = extractRouting(input(G_ADDRESS, "signed", "abc123"));
+    expect(result.warnings).toContainEqual({
+      code: "UNSUPPORTED_MEMO_TYPE",
+      severity: "warn",
+      message: "Unrecognized memo type: signed",
+      context: { memoType: "unknown" },
+    });
+  });
+
+  it("warning object has severity 'warn', a non-empty message and a context", () => {
+    const result = extractRouting(input(G_ADDRESS, "hash", "abc123"));
+    const warning = result.warnings.find(
+      (w: Warning) => w.code === "UNSUPPORTED_MEMO_TYPE"
+    );
+    expect(warning).toBeDefined();
+    expect(warning!.severity).toBe("warn");
+    expect(warning!.message.length).toBeGreaterThan(0);
+    expect((warning as { context: { memoType: string } }).context).toEqual({
+      memoType: "hash",
+    });
+  });
+});
+
+describe("MEMO_TEXT_UNROUTABLE warning", () => {
+  it("emits MEMO_TEXT_UNROUTABLE for a non-numeric MEMO_TEXT", () => {
+    const result = extractRouting(input(G_ADDRESS, "text", "not-a-number"));
+    const codes = result.warnings.map((w: Warning) => w.code);
     expect(codes).toContain("MEMO_TEXT_UNROUTABLE");
+    expect(codes).not.toContain("UNSUPPORTED_MEMO_TYPE");
   });
 
   it("warning object has severity 'warn' and a non-empty message", () => {
-    const result = extractRouting(input(G_ADDRESS, "hash", "abc123"));
+    const result = extractRouting(input(G_ADDRESS, "text", "not-a-number"));
     const warning = result.warnings.find(
       (w: Warning) => w.code === "MEMO_TEXT_UNROUTABLE"
     );

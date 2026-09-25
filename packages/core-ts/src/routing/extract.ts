@@ -236,16 +236,23 @@ export function extractRouting(input: RoutingInput): RoutingResult {
       });
     }
   } else if (input.memoType === "hash" || input.memoType === "return") {
+    // `UNSUPPORTED_MEMO_TYPE` is the normative code for a memo type that
+    // cannot carry a routing ID, and spec/schema.json requires the matching
+    // `context.memoType`. This branch previously reported
+    // `MEMO_TEXT_UNROUTABLE`, a code core-go and core-dart never emit and one
+    // the schema models as a plain generic warning with no context.
     warnings.push({
-      code: "MEMO_TEXT_UNROUTABLE",
+      code: "UNSUPPORTED_MEMO_TYPE",
       severity: "warn",
       message: `Memo type ${input.memoType} is not supported for routing.`,
+      context: { memoType: input.memoType },
     });
   } else if (input.memoType !== "none") {
     warnings.push({
-      code: "MEMO_TEXT_UNROUTABLE",
+      code: "UNSUPPORTED_MEMO_TYPE",
       severity: "warn",
       message: `Unrecognized memo type: ${input.memoType}`,
+      context: { memoType: "unknown" },
     });
   }
 
