@@ -23,7 +23,8 @@
 ///   low-level [MuxedEncoder] / [MuxedDecoder].
 /// - **Routing:** [extractRouting], [extractRoutingSync], [RoutingInput],
 ///   [RoutingResult], [RoutingSource], [RoutingWarning], [DestinationError],
-///   [SafeRoutingId], [normalizeMemoId], [normalizeMemoTextId].
+///   [SafeRoutingId], [normalizeMemoId], [normalizeMemoTextId],
+///   [extractRoutingFromUriString], [UriRoutingResult].
 /// - **Codes:** [ErrorCode], [WarningCode], [WarningSeverity], [Warning].
 /// - **Exceptions:** [StellarAddressException], [ExtractRoutingException].
 /// - **Platform:** [isWebJsRuntime].
@@ -49,8 +50,7 @@ export 'src/routing/memo.dart' hide uint64Max, digitsOnly;
 export 'src/routing/routing_result.dart';
 export 'src/routing/safe_routing_id.dart';
 export 'src/routing/severity.dart';
-export 'src/util/web_platform.dart';
-export 'src/muxed/muxed_address.dart';
+export 'src/routing/uri.dart';
 export 'src/exceptions.dart';
 
 // Platform

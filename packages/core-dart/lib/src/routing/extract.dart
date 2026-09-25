@@ -1,4 +1,5 @@
 import '../address/codes.dart' as codes;
+import '../address/codes.dart' show WarningContext;
 import '../address/parse.dart';
 import '../muxed/decode.dart';
 import 'routing_result.dart';
@@ -31,14 +32,21 @@ import 'severity.dart';
 /// Warnings below [RoutingInput.minSeverityLevel] are filtered out using the
 /// shared severity ordering (info = 0, warn = 1, error = 2).
 RoutingResult extractRoutingSync(RoutingInput input) {
-  final result = _extractRoutingUnfiltered(input);
-  if (severityWeight(input.minSeverityLevel) == 0) return result;
+  return _filterResultBySeverity(_extractRoutingUnfiltered(input), input.minSeverityLevel);
+}
+
+/// Re-applies [RoutingInput.minSeverityLevel] to an already-built result.
+///
+/// Returns [result] unchanged when the threshold is `info` (or unrecognized),
+/// which is the common path and avoids re-allocating the warning list.
+RoutingResult _filterResultBySeverity(RoutingResult result, String? minSeverityLevel) {
+  if (severityWeight(minSeverityLevel) == 0) return result;
   return RoutingResult(
     source: result.source,
     id: result.id,
     destinationBaseAccount: result.destinationBaseAccount,
     destinationError: result.destinationError,
-    warnings: filterBySeverity(result.warnings, input.minSeverityLevel),
+    warnings: filterBySeverity(result.warnings, minSeverityLevel),
   );
 }
 
@@ -173,6 +181,7 @@ RoutingResult _extractRoutingUnfiltered(RoutingInput input) {
           code: codes.WarningCode.unsupportedMemoType,
           severity: codes.WarningSeverity.warn,
           message: 'Memo type ${input.memoType} is not supported for routing.',
+          context: WarningContext(memoType: input.memoType),
         ),
       );
     } else {
@@ -181,6 +190,7 @@ RoutingResult _extractRoutingUnfiltered(RoutingInput input) {
           code: codes.WarningCode.unsupportedMemoType,
           severity: codes.WarningSeverity.warn,
           message: 'Unrecognized memo type: unknown',
+          context: WarningContext(memoType: 'unknown'),
         ),
       );
     }
@@ -244,6 +254,7 @@ RoutingResult _extractRoutingUnfiltered(RoutingInput input) {
         code: codes.WarningCode.unsupportedMemoType,
         severity: codes.WarningSeverity.warn,
         message: 'Memo type ${input.memoType} is not supported for routing.',
+        context: WarningContext(memoType: input.memoType),
       ),
     );
   } else if (input.memoType != 'none') {
@@ -252,6 +263,7 @@ RoutingResult _extractRoutingUnfiltered(RoutingInput input) {
         code: codes.WarningCode.unsupportedMemoType,
         severity: codes.WarningSeverity.warn,
         message: 'Unrecognized memo type: unknown',
+        context: WarningContext(memoType: 'unknown'),
       ),
     );
   }
@@ -312,7 +324,7 @@ Future<RoutingResult> extractRouting(
         destinationError: result.destinationError,
         warnings: [...result.warnings, RoutingWarning.missingRequiredMemo],
       );
-      return _filterBySeverity(withMemoWarning, input.minSeverityLevel);
+      return _filterResultBySeverity(withMemoWarning, input.minSeverityLevel);
     }
   } catch (_) {
     // Network/configuration failures must not change the synchronous result.

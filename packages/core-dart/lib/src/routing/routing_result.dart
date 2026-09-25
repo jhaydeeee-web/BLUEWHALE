@@ -4,7 +4,7 @@
 /// never have to push 64-bit routing IDs through a JS `Number`.
 library;
 
-import '../address/codes.dart' show WarningSeverity;
+import '../address/codes.dart' show WarningCode, WarningContext, WarningSeverity;
 import 'safe_routing_id.dart';
 
 /// Identifies the mechanism used to resolve a routing ID.
@@ -31,65 +31,63 @@ enum RoutingSource {
   }
 }
 
-/// Severity levels for routing warnings, ordered from least to most severe.
-///
-/// Used with [RoutingInput.minSeverityLevel] to filter warnings by importance.
-enum WarningSeverity {
-  /// Informational notice; no action required.
-  info,
-
-  /// Potential problem that may need attention.
-  warn,
-
-  /// Serious problem; the payment should not be credited automatically.
-  error;
-
-  /// Parses a wire severity string (`info`, `warn`, `error`).
-  ///
-  /// Returns `null` for unrecognized values.
-  static WarningSeverity? tryParse(String value) {
-    for (final s in WarningSeverity.values) {
-      if (s.name == value) return s;
-    }
-    return null;
-  }
-}
-
 /// Represents a non-blocking notification emitted during routing resolution.
 class RoutingWarning {
   /// The unique code identifying the warning type.
+  ///
+  /// Always one of the normative [WarningCode] strings, so it serializes
+  /// byte-for-byte identically to core-ts and core-go.
   final String code;
 
-  /// The severity of the warning (info, warn, error).
+  /// The severity of the warning (`info`, `warn` or `error`).
   final String severity;
 
   /// A descriptive message explaining the warning.
   final String message;
+
+  /// Optional extra detail required by some codes.
+  ///
+  /// `INVALID_DESTINATION` requires `destinationKind: 'C'` and
+  /// `UNSUPPORTED_MEMO_TYPE` requires `memoType` to be one of `hash`,
+  /// `return` or `unknown`; `spec/schema.json` rejects those warnings when
+  /// [context] is missing. Every other code must leave it `null`, because
+  /// the schema forbids additional properties on a generic warning.
+  final WarningContext? context;
 
   /// Creates a warning. See [WarningSeverity] for valid [severity] values.
   const RoutingWarning({
     required this.code,
     required this.severity,
     required this.message,
+    this.context,
   });
 
   /// Emitted when a memo is present but ignored because the destination is a muxed address.
   static const memoIgnored = RoutingWarning(
-    code: 'memo-ignored',
+    code: WarningCode.memoIgnoredForMuxed,
     severity: WarningSeverity.info,
-    message: 'Memo ignored for muxed address',
+    message: 'Memo present with M-address. Any potential routing ID in memo is ignored.',
+  );
+
+  /// Emitted when both an M-address and a routable memo were supplied; the
+  /// M-address ID takes precedence.
+  static const memoPresentWithMuxed = RoutingWarning(
+    code: WarningCode.memoPresentWithMuxed,
+    severity: WarningSeverity.warn,
+    message:
+        'Routing ID found in both M-address and Memo. M-address ID takes precedence.',
   );
 
   /// Emitted when the transaction sender is detected as a smart contract.
   static const contractSender = RoutingWarning(
-    code: 'CONTRACT_SENDER_DETECTED',
-    severity: 'info',
+    code: WarningCode.contractSenderDetected,
+    severity: WarningSeverity.info,
     message: 'Contract source detected. Routing state cleared.',
   );
 
   /// Emitted when SEP-0029 requires a memo but no routing ID was supplied.
   static const missingRequiredMemo = RoutingWarning(
-    code: 'MISSING_REQUIRED_MEMO',
+    code: WarningCode.missingRequiredMemo,
     severity: WarningSeverity.error,
     message: 'Destination account requires a memo, but no routing ID was provided.',
   );
@@ -97,14 +95,40 @@ class RoutingWarning {
   /// Emitted when the destination is a contract (C) address, which cannot
   /// receive classic payments.
   static const invalidDestination = RoutingWarning(
-    code: 'INVALID_DESTINATION',
-    severity: 'error',
+    code: WarningCode.invalidDestination,
+    severity: WarningSeverity.error,
     message: 'C address is not a valid destination',
+    context: WarningContext(destinationKind: 'C'),
   );
+
+  /// Returns a copy of this warning with [context] attached.
+  ///
+  /// Useful for codes whose context is derived from the input rather than
+  /// being a fixed constant, such as [WarningCode.unsupportedMemoType].
+  RoutingWarning withContext(WarningContext context) => RoutingWarning(
+        code: code,
+        severity: severity,
+        message: message,
+        context: context,
+      );
 
   /// The parsed [WarningSeverity] of this warning, or `null` if [severity]
   /// is not a recognized level.
-  WarningSeverity? get severityLevel => WarningSeverity.tryParse(severity);
+  String? get severityLevel => WarningSeverity.tryParse(severity);
+
+  /// Serializes this warning to the JSON shape defined by
+  /// `spec/schema.json`.
+  ///
+  /// The `context` key is present only when [context] is non-null, which is
+  /// exactly when the schema's `oneOf` branch for [code] requires it.
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'code': code,
+      'severity': severity,
+      'message': message,
+      if (context != null) 'context': context!.toJson(),
+    };
+  }
 
   @override
   String toString() => '[$severity] $code: $message';
@@ -116,10 +140,11 @@ class RoutingWarning {
           runtimeType == other.runtimeType &&
           code == other.code &&
           severity == other.severity &&
-          message == other.message;
+          message == other.message &&
+          context == other.context;
 
   @override
-  int get hashCode => Object.hash(code, severity, message);
+  int get hashCode => Object.hash(code, severity, message, context);
 }
 
 /// Details of a terminal error encountered during destination account parsing.
@@ -234,6 +259,11 @@ final class RoutingResult {
   /// - [warnings]             → `"warnings"`
   /// - [destinationError]     → `"destinationError"` (or absent when null)
   ///
+  /// Warning objects serialize as `code`/`severity`/`message` plus a
+  /// `context` object when — and only when — the code requires one
+  /// (`INVALID_DESTINATION`, `UNSUPPORTED_MEMO_TYPE`), matching the
+  /// `oneOf` branches in `spec/schema.json`.
+  ///
   /// The routing ID is always serialized as a **decimal string** — never as a
   /// JS `Number` — so the exact uint64 value survives across isolate boundaries
   /// and platform channels on Flutter Web.
@@ -242,13 +272,7 @@ final class RoutingResult {
       'destinationBaseAccount': destinationBaseAccount,
       'routingId': id?.toString(),
       'routingSource': source.name,
-      'warnings': warnings
-          .map((w) => <String, dynamic>{
-                'code': w.code,
-                'severity': w.severity,
-                'message': w.message,
-              })
-          .toList(),
+      'warnings': warnings.map((w) => w.toJson()).toList(),
       if (destinationError != null)
         'destinationError': <String, dynamic>{
           'code': destinationError!.code,
@@ -290,8 +314,9 @@ final class RoutingResult {
         if (w is Map<String, dynamic>) {
           warnings.add(RoutingWarning(
             code: w['code'] as String? ?? '',
-            severity: w['severity'] as String? ?? 'info',
+            severity: w['severity'] as String? ?? WarningSeverity.info,
             message: w['message'] as String? ?? '',
+            context: _warningContextFromJson(w['context']),
           ));
         }
       }
@@ -376,4 +401,19 @@ final class RoutingResult {
     }
     return true;
   }
+}
+
+/// Reads a `context` object out of a deserialized warning.
+///
+/// Returns `null` for a missing or empty object so a warning without context
+/// round-trips through [RoutingResult.toJson] unchanged.
+WarningContext? _warningContextFromJson(Object? raw) {
+  if (raw is! Map) return null;
+  final destinationKind = raw['destinationKind'];
+  final memoType = raw['memoType'];
+  if (destinationKind == null && memoType == null) return null;
+  return WarningContext(
+    destinationKind: destinationKind as String?,
+    memoType: memoType as String?,
+  );
 }

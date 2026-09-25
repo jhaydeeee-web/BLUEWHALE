@@ -8,10 +8,14 @@ class StrKeyUtil {
 
   /// Decodes an unpadded RFC 4648 Base32 string (case-insensitive).
   ///
-  /// Throws [FormatException] on characters outside the Base32 alphabet.
+  /// Throws [FormatException] when a character falls outside the Base32
+  /// alphabet, or when the encoding is not canonical — i.e. when re-encoding
+  /// the decoded bytes does not reproduce the input. The latter rejects
+  /// non-zero bits in the final, partially-used group, which would otherwise
+  /// give one payload several distinct string encodings.
   static Uint8List decodeBase32(String input) {
-    input = input.toUpperCase().replaceAll('=', '');
-    final charCount = input.length;
+    final normalized = input.toUpperCase().replaceAll('=', '');
+    final charCount = normalized.length;
     final byteCount = (charCount * 5) ~/ 8;
     final result = Uint8List(byteCount);
 
@@ -23,9 +27,15 @@ class StrKeyUtil {
     while (byteIndex < byteCount) {
       if (bitsLeft < 8) {
         if (charIndex < charCount) {
-          final char = input[charIndex++];
+          final char = normalized[charIndex++];
           final value = _alphabet.indexOf(char);
-          if (value == -1) throw FormatException('Invalid Base32 character: $char');
+          if (value == -1) {
+            throw FormatException(
+              'Invalid Base32 character: $char',
+              normalized,
+              charIndex - 1,
+            );
+          }
           buffer = (buffer << 5) | value;
           bitsLeft += 5;
         } else {
@@ -37,6 +47,14 @@ class StrKeyUtil {
         result[byteIndex++] = (buffer >> (bitsLeft - 8)) & 0xFF;
         bitsLeft -= 8;
       }
+    }
+
+    // Unused bits in the final group must be zero. Re-encoding is the
+    // cheapest way to assert that: a canonical payload always round-trips.
+    if (encodeBase32(result) != normalized) {
+      throw const FormatException(
+        'Invalid Base32 encoding: unused trailing bits must be zero',
+      );
     }
 
     return result;

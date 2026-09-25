@@ -11,7 +11,6 @@ import 'extract.dart';
 import 'routing_result.dart';
 
 const _scheme = 'web+stellar';
-
 /// Reasons a SEP-0007 URI could not be turned into a routing result.
 enum UriRoutingErrorCode {
   /// The input is not a parseable URI, or does not use the `web+stellar:` scheme.
@@ -98,9 +97,20 @@ final class UriRoutingResult {
 /// ```
 UriRoutingResult extractRoutingFromUriString(
   String uriString, {
-  WarningSeverity? minSeverityLevel,
+  String? minSeverityLevel,
 }) {
   final trimmed = uriString.trim();
+
+  // Checked against the raw string, before `Uri.parse` runs: the parser
+  // normalizes a malformed escape such as `%zz` into `%25zz`, which would
+  // otherwise hide the very defect we want to report.
+  if (!_hasWellFormedPercentEncoding(_rawQueryOf(trimmed))) {
+    return const UriRoutingResult._failure(
+      UriRoutingErrorCode.invalidEncoding,
+      'Failed to decode URI query parameters.',
+    );
+  }
+
   final Uri uri;
   try {
     uri = Uri.parse(trimmed);
@@ -129,7 +139,7 @@ UriRoutingResult extractRoutingFromUriString(
 /// Never throws: malformed input yields a failed [UriRoutingResult].
 UriRoutingResult extractRoutingFromUri(
   Uri uri, {
-  WarningSeverity? minSeverityLevel,
+  String? minSeverityLevel,
 }) {
   if (uri.scheme.toLowerCase() != _scheme) {
     return const UriRoutingResult._failure(
@@ -208,4 +218,38 @@ String _mapMemoType(String? sep7MemoType) {
     default:
       return 'none';
   }
+}
+
+/// Returns the raw (still percent-encoded) query string of [rawUri], or an
+/// empty string when it carries no `?`.
+String _rawQueryOf(String rawUri) {
+  final queryIndex = rawUri.indexOf('?');
+  if (queryIndex == -1) return '';
+  return rawUri.substring(queryIndex + 1);
+}
+
+bool _isHexDigit(int codeUnit) =>
+    (codeUnit >= 0x30 && codeUnit <= 0x39) || // 0-9
+    (codeUnit >= 0x41 && codeUnit <= 0x46) || // A-F
+    (codeUnit >= 0x61 && codeUnit <= 0x66); // a-f
+
+/// Reports whether every `%` in [rawQuery] introduces a complete two-digit
+/// percent-escape.
+///
+/// `Uri.queryParametersAll` is deliberately lenient: it leaves `%zz` and a
+/// bare trailing `%` in place instead of failing. A SEP-0007 URI carrying
+/// those is malformed, and passing a half-decoded `memo` downstream would
+/// hand consumers a value the sender never encoded. Rejecting them here keeps
+/// [UriRoutingErrorCode.invalidEncoding] reachable for the case it exists for.
+bool _hasWellFormedPercentEncoding(String rawQuery) {
+  for (var i = 0; i < rawQuery.length; i++) {
+    if (rawQuery.codeUnitAt(i) != 0x25) continue; // '%'
+    if (i + 2 >= rawQuery.length) return false;
+    if (!_isHexDigit(rawQuery.codeUnitAt(i + 1)) ||
+        !_isHexDigit(rawQuery.codeUnitAt(i + 2))) {
+      return false;
+    }
+    i += 2;
+  }
+  return true;
 }

@@ -1,14 +1,8 @@
 /// Warning severity ordering shared across the Bluewhale SDKs.
 library;
 
+import '../address/codes.dart';
 import 'routing_result.dart';
-
-/// Warning severities, ordered from least to most severe.
-abstract final class WarningSeverity {
-  static const info = 'info';
-  static const warn = 'warn';
-  static const error = 'error';
-}
 
 /// Numeric weight of each warning severity. This ordering is normative and is
 /// shared verbatim by core-ts (`SEVERITY_ORDER`) and core-go
