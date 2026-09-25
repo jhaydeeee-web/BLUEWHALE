@@ -101,17 +101,6 @@ class RoutingWarning {
     context: WarningContext(destinationKind: 'C'),
   );
 
-  /// Returns a copy of this warning with [context] attached.
-  ///
-  /// Useful for codes whose context is derived from the input rather than
-  /// being a fixed constant, such as [WarningCode.unsupportedMemoType].
-  RoutingWarning withContext(WarningContext context) => RoutingWarning(
-        code: code,
-        severity: severity,
-        message: message,
-        context: context,
-      );
-
   /// The parsed [WarningSeverity] of this warning, or `null` if [severity]
   /// is not a recognized level.
   String? get severityLevel => WarningSeverity.tryParse(severity);
