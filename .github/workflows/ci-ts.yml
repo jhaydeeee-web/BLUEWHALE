@@ -18,18 +18,18 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
         with:
           version: 9
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 20
           cache: "pnpm"
       - run: pnpm install
       - run: pnpm --filter @redishfish/bluewhale-core test -- --coverage
       - name: Upload TypeScript coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v7
         with:
           flags: typescript
           files: packages/core-ts/coverage/lcov.info
