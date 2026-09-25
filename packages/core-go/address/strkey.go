@@ -36,14 +36,12 @@ var (
 const stackBufLen = 128
 
 // DecodeStrKey decodes a strkey address and returns version byte and payload.
+// It is case-insensitive; Parse is the entry point that reports case
+// normalization via WarnNonCanonicalAddress.
 func DecodeStrKey(address string) (versionByte byte, payload []byte, err error) {
-	if address == "" {
-		return 0, nil, ErrInvalidLengthError
-	}
-
-	// Convert to uppercase for base32 decoding. DecodeStrKey only validates;
-	// Parse reports case normalization via WarnNonCanonicalAddress.
-	address = strings.ToUpper(address)
+	versionByte, payload, _, err = decodeStrKey(address)
+	return versionByte, payload, err
+}
 
 // decodeStrKey is DecodeStrKey that also returns the canonical (uppercase)
 // form of address. canonical aliases address when it is already uppercase.

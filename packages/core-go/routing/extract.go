@@ -208,18 +208,25 @@ func extractRouting(input RoutingInput) RoutingResult {
 // cancellation and deadline propagation.
 type MemoRequirementFetcher func(baseAccount string) (bool, error)
 
-// ExtractRoutingWithMemoRequirement performs normal routing extraction and
+// ContextMemoRequirementFetcher is the context-aware form of
+// [MemoRequirementFetcher]. Implementations should honour ctx cancellation so
+// an in-flight Horizon or indexer lookup does not outlive the caller's
+// deadline.
+type ContextMemoRequirementFetcher func(ctx context.Context, baseAccount string) (bool, error)
+
+// ExtractRoutingWithContext performs normal routing extraction and
 // optionally adds the SEP-0029 error when a classic destination requires a
 // memo but no routing ID was supplied. Fetch failures fail open so callers
 // retain the result of the synchronous parser.
 //
-// The ctx parameter is accepted for API consistency with context-aware
-// call chains (e.g. future fetcher implementations backed by Horizon or an
-// indexer); the current implementation performs no cancellable work and
-// does not use it.
-func ExtractRoutingWithMemoRequirement(ctx context.Context, input RoutingInput, fetch MemoRequirementFetcher) RoutingResult {
+// ctx is forwarded to fetch, allowing a cancelled or expired context to abort
+// the lookup; a fetcher that returns an error contributes no warning.
+func ExtractRoutingWithContext(ctx context.Context, input RoutingInput, fetch ContextMemoRequirementFetcher) RoutingResult {
 	result := ExtractRouting(input)
 	if fetch == nil || result.DestinationBaseAccount == "" || result.RoutingID != nil || result.DestinationError != nil {
+		return result
+	}
+	if err := ctx.Err(); err != nil {
 		return result
 	}
 	required, err := fetch(ctx, result.DestinationBaseAccount)
