@@ -134,7 +134,7 @@ RoutingResult _extractRoutingUnfiltered(RoutingInput input) {
         warnings.add(
           const RoutingWarning(
             code: codes.WarningCode.memoIdInvalidFormat,
-            severity: 'warn',
+            severity: codes.WarningSeverity.warn,
             message: 'MEMO_ID was empty, non-numeric, or exceeded uint64 max.',
           ),
         );
@@ -155,7 +155,7 @@ RoutingResult _extractRoutingUnfiltered(RoutingInput input) {
         warnings.add(
           const RoutingWarning(
             code: codes.WarningCode.memoTextUnroutable,
-            severity: 'warn',
+            severity: codes.WarningSeverity.warn,
             message: 'MEMO_TEXT was not a valid numeric uint64.',
           ),
         );
@@ -171,7 +171,7 @@ RoutingResult _extractRoutingUnfiltered(RoutingInput input) {
       warnings.add(
         RoutingWarning(
           code: codes.WarningCode.unsupportedMemoType,
-          severity: 'warn',
+          severity: codes.WarningSeverity.warn,
           message: 'Memo type ${input.memoType} is not supported for routing.',
         ),
       );
@@ -179,7 +179,7 @@ RoutingResult _extractRoutingUnfiltered(RoutingInput input) {
       warnings.add(
         const RoutingWarning(
           code: codes.WarningCode.unsupportedMemoType,
-          severity: 'warn',
+          severity: codes.WarningSeverity.warn,
           message: 'Unrecognized memo type: unknown',
         ),
       );
@@ -205,7 +205,7 @@ RoutingResult _extractRoutingUnfiltered(RoutingInput input) {
       warnings.add(
         const RoutingWarning(
           code: codes.WarningCode.memoIdInvalidFormat,
-          severity: 'warn',
+          severity: codes.WarningSeverity.warn,
           message: 'MEMO_ID was empty, non-numeric, or exceeded uint64 max.',
         ),
       );
@@ -226,7 +226,7 @@ RoutingResult _extractRoutingUnfiltered(RoutingInput input) {
       warnings.add(
         const RoutingWarning(
           code: codes.WarningCode.memoTextUnroutable,
-          severity: 'warn',
+          severity: codes.WarningSeverity.warn,
           message: 'MEMO_TEXT was not a valid numeric uint64.',
         ),
       );
@@ -242,7 +242,7 @@ RoutingResult _extractRoutingUnfiltered(RoutingInput input) {
     warnings.add(
       RoutingWarning(
         code: codes.WarningCode.unsupportedMemoType,
-        severity: 'warn',
+        severity: codes.WarningSeverity.warn,
         message: 'Memo type ${input.memoType} is not supported for routing.',
       ),
     );
@@ -250,7 +250,7 @@ RoutingResult _extractRoutingUnfiltered(RoutingInput input) {
     warnings.add(
       const RoutingWarning(
         code: codes.WarningCode.unsupportedMemoType,
-        severity: 'warn',
+        severity: codes.WarningSeverity.warn,
         message: 'Unrecognized memo type: unknown',
       ),
     );
@@ -264,15 +264,33 @@ RoutingResult _extractRoutingUnfiltered(RoutingInput input) {
   );
 }
 
-/// Extracts deposit routing information with support for future
-/// async network checks (Federation, SEP-0029).
+/// Looks up whether [baseAccount] requires a memo on incoming payments
+/// (SEP-0029, the `config.memo_required` account data entry).
 ///
-/// Currently delegates to [extractRoutingSync]; when async capabilities
-/// are added this function will perform the additional checks.
+/// Supplied by the caller so this package stays free of network code.
 typedef MemoRequirementFetcher = Future<bool> Function(String baseAccount);
 
-/// Performs routing extraction and optionally checks a destination's SEP-0029
-/// memo requirement. Fetch failures fail open to preserve parser behavior.
+/// Extracts deposit routing information, optionally checking the
+/// destination's SEP-0029 memo requirement.
+///
+/// Runs [extractRoutingSync] first. If [fetchMemoRequirement] is given and
+/// the result has a destination account but no routing ID, the fetcher is
+/// called; when it returns `true`, [RoutingWarning.missingRequiredMemo] is
+/// appended. Fetch failures fail open: the synchronous result is returned
+/// unchanged.
+///
+/// ```dart
+/// final result = await extractRouting(
+///   RoutingInput(
+///     destination: 'GAYCUYT553C5LHVE2XPW5GMEJT4BXGM7AHMJWLAPZP53KJO7EIQADRSI',
+///     memoType: 'none',
+///   ),
+///   fetchMemoRequirement: (account) async => horizon.requiresMemo(account),
+/// );
+/// if (result.warnings.contains(RoutingWarning.missingRequiredMemo)) {
+///   // Hold the deposit for manual review.
+/// }
+/// ```
 Future<RoutingResult> extractRouting(
   RoutingInput input, {
   MemoRequirementFetcher? fetchMemoRequirement,

@@ -4,6 +4,7 @@
 /// never have to push 64-bit routing IDs through a JS `Number`.
 library;
 
+import '../address/codes.dart' show WarningSeverity;
 import 'safe_routing_id.dart';
 
 /// Identifies the mechanism used to resolve a routing ID.
@@ -65,6 +66,7 @@ class RoutingWarning {
   /// A descriptive message explaining the warning.
   final String message;
 
+  /// Creates a warning. See [WarningSeverity] for valid [severity] values.
   const RoutingWarning({
     required this.code,
     required this.severity,
@@ -74,7 +76,7 @@ class RoutingWarning {
   /// Emitted when a memo is present but ignored because the destination is a muxed address.
   static const memoIgnored = RoutingWarning(
     code: 'memo-ignored',
-    severity: 'info',
+    severity: WarningSeverity.info,
     message: 'Memo ignored for muxed address',
   );
 
@@ -88,7 +90,7 @@ class RoutingWarning {
   /// Emitted when SEP-0029 requires a memo but no routing ID was supplied.
   static const missingRequiredMemo = RoutingWarning(
     code: 'MISSING_REQUIRED_MEMO',
-    severity: 'error',
+    severity: WarningSeverity.error,
     message: 'Destination account requires a memo, but no routing ID was provided.',
   );
 
@@ -122,18 +124,35 @@ class RoutingWarning {
 
 /// Details of a terminal error encountered during destination account parsing.
 class DestinationError {
-  /// The [ErrorCode] identifying the failure reason.
+  /// The `ErrorCode` identifying the failure reason.
   final String code;
 
   /// A human-readable error message.
   final String message;
 
+  /// Creates a destination error.
   DestinationError({required this.code, required this.message});
 }
 
 /// Exception thrown when the routing input is fundamentally malformed.
+///
+/// `extractRoutingSync` and `extractRouting` throw this for an empty
+/// destination or one whose prefix is not `G` or `M`. Structurally invalid
+/// `G`/`M` addresses do **not** throw; they are reported through
+/// [RoutingResult.destinationError].
+///
+/// ```dart
+/// try {
+///   extractRoutingSync(RoutingInput(destination: '', memoType: 'none'));
+/// } on ExtractRoutingException catch (e) {
+///   print(e.message);
+/// }
+/// ```
 class ExtractRoutingException implements Exception {
+  /// A human-readable description of what was wrong with the input.
   final String message;
+
+  /// Creates an exception carrying [message].
   const ExtractRoutingException(this.message);
 
   @override
@@ -196,6 +215,8 @@ final class RoutingResult {
   /// Details of the error if the destination address was unparseable.
   final DestinationError? destinationError;
 
+  /// Creates a routing result. [warnings] is copied into an unmodifiable
+  /// list.
   RoutingResult({
     required this.source,
     this.id,
@@ -314,6 +335,8 @@ final class RoutingResult {
   /// platforms, including Flutter Web.
   SafeRoutingId? get safeId => id == null ? null : SafeRoutingId.fromBigInt(id!);
 
+  /// Returns a one-line human-readable summary of the result, such as
+  /// `Muxed routing: ID 42 -> GA…`.
   String toDisplayString() {
     switch (source) {
       case RoutingSource.muxed:
