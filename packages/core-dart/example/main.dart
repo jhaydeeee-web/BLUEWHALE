@@ -23,7 +23,7 @@ void main() async {
 
   // 5. Extract routing information from an incoming payment (async API)
   // This is used to reconcile deposits in a pooled account.
-  final result = await extractRouting(RoutingInput(
+  final result = await extractRoutingAsync(RoutingInput(
     destination: mAddress,
     memoType: 'none',
     memoValue: null,

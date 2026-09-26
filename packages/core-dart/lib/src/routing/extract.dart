@@ -24,13 +24,19 @@ import 'severity.dart';
 /// [RoutingResult.safeId] accessors, MEMO_IDs and muxed IDs up to the
 /// uint64 ceiling survive Flutter Web without truncation.
 ///
-/// This is the synchronous variant for pure string parsing.
-/// For future compatibility with async network checks (Federation, SEP-0029),
-/// use [extractRouting] instead.
+/// Deprecated synchronous alias of [extractRouting]. For async network checks
+/// (Federation, SEP-0029), use [extractRoutingAsync].
 ///
 /// Warnings below [RoutingInput.minSeverityLevel] are filtered out using the
 /// shared severity ordering (info = 0, warn = 1, error = 2).
-RoutingResult extractRoutingSync(RoutingInput input) {
+@Deprecated('Use extractRouting, which is now synchronous. '
+    'For async network checks use extractRoutingAsync.')
+RoutingResult extractRoutingSync(RoutingInput input) => extractRouting(input);
+
+/// Extracts deposit routing synchronously (pure string parsing).
+///
+/// For async network checks (Federation, SEP-0029) use [extractRoutingAsync].
+RoutingResult extractRouting(RoutingInput input) {
   final result = _extractRoutingUnfiltered(input);
   if (severityWeight(input.minSeverityLevel) == 0) return result;
   return RoutingResult(
@@ -273,14 +279,14 @@ typedef MemoRequirementFetcher = Future<bool> Function(String baseAccount);
 /// Extracts deposit routing information, optionally checking the
 /// destination's SEP-0029 memo requirement.
 ///
-/// Runs [extractRoutingSync] first. If [fetchMemoRequirement] is given and
+/// Runs [extractRouting] first. If [fetchMemoRequirement] is given and
 /// the result has a destination account but no routing ID, the fetcher is
 /// called; when it returns `true`, [RoutingWarning.missingRequiredMemo] is
 /// appended. Fetch failures fail open: the synchronous result is returned
 /// unchanged.
 ///
 /// ```dart
-/// final result = await extractRouting(
+/// final result = await extractRoutingAsync(
 ///   RoutingInput(
 ///     destination: 'GAYCUYT553C5LHVE2XPW5GMEJT4BXGM7AHMJWLAPZP53KJO7EIQADRSI',
 ///     memoType: 'none',
@@ -291,11 +297,11 @@ typedef MemoRequirementFetcher = Future<bool> Function(String baseAccount);
 ///   // Hold the deposit for manual review.
 /// }
 /// ```
-Future<RoutingResult> extractRouting(
+Future<RoutingResult> extractRoutingAsync(
   RoutingInput input, {
   MemoRequirementFetcher? fetchMemoRequirement,
 }) async {
-  final result = extractRoutingSync(input);
+  final result = extractRouting(input);
   if (fetchMemoRequirement == null ||
       result.destinationBaseAccount == null ||
       result.id != null ||

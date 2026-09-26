@@ -197,7 +197,7 @@ void main() {
     });
 
     test('async extractRouting applies the filter to added warnings', () async {
-      final result = await extractRouting(
+      final result = await extractRoutingAsync(
         RoutingInput(
           destination: baseG,
           memoType: 'none',

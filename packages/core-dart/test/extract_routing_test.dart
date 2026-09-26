@@ -208,14 +208,14 @@ void main() {
     test('completes with INVALID_DESTINATION warning for C-addresses', () async {
       const cAddress = 'CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC';
       final result =
-          await extractRouting(RoutingInput(destination: cAddress, memoType: 'none'));
+          await extractRoutingAsync(RoutingInput(destination: cAddress, memoType: 'none'));
 
       expect(result.source, RoutingSource.none);
       expect(result.warnings, [RoutingWarning.invalidDestination]);
     });
 
     test('returns structured destinationError for empty destination (#77)', () async {
-      final result = await extractRouting(
+      final result = await extractRoutingAsync(
         RoutingInput(destination: '', memoType: 'none'),
       );
 

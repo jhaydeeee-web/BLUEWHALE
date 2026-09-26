@@ -21,7 +21,7 @@
 ///   [AddressKind], [ParseResult], [AddressError].
 /// - **Muxed accounts:** [MuxedAddress], [DecodedMuxedAddress], and the
 ///   low-level [MuxedEncoder] / [MuxedDecoder].
-/// - **Routing:** [extractRouting], [extractRoutingSync], [RoutingInput],
+/// - **Routing:** [extractRouting], [extractRoutingAsync], [extractRoutingSync], [RoutingInput],
 ///   [RoutingResult], [RoutingSource], [RoutingWarning], [DestinationError],
 ///   [SafeRoutingId], [normalizeMemoId], [normalizeMemoTextId].
 /// - **Codes:** [ErrorCode], [WarningCode], [WarningSeverity], [Warning].
