@@ -10,30 +10,22 @@ import (
 
 // normalizeUnsupportedMemoType canonicalizes a memo type string by lower-casing it
 // and stripping underscores and hyphens, then maps it to a known unsupported type.
-// Uses strings.Builder to avoid intermediate string allocations from chained ReplaceAll/ToLower.
+// Uses allocation-free byte comparisons: exact-match fast paths for canonical types, then a folded compare.
 func normalizeUnsupportedMemoType(memoType string) string {
 	switch memoType {
 	case "hash", "return":
 		return memoType
 	}
 
-	var sb strings.Builder
-	sb.Grow(len(memoType))
-	for i := 0; i < len(memoType); i++ {
-		c := memoType[i]
-		if c == '_' || c == '-' {
-			continue
-		}
-		if 'A' <= c && c <= 'Z' {
-			c += 'a' - 'A'
-		}
-		sb.WriteByte(c)
+	switch memoType {
+	case "none", "id", "text":
+		return ""
 	}
 
-	switch sb.String() {
-	case "memohash":
+	switch {
+	case foldedMemoTypeEquals(memoType, "memohash"):
 		return "hash"
-	case "memoreturn":
+	case foldedMemoTypeEquals(memoType, "memoreturn"):
 		return "return"
 	default:
 		return ""
