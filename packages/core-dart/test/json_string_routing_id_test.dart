@@ -12,6 +12,8 @@
 ///
 ///   [SafeRoutingId.toJson()] and [RoutingResult.idString] both return the
 ///   exact decimal string, which forces the receiver to use BigInt parsing.
+library;
+
 // ignore_for_file: prefer_const_constructors
 import 'dart:convert';
 import 'package:test/test.dart';

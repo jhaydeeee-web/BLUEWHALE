@@ -1,4 +1,5 @@
 @TestOn('browser')
+library;
 
 import 'package:bluewhale_core/bluewhale_core.dart';
 import 'package:test/test.dart';

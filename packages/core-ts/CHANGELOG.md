@@ -9,6 +9,31 @@ Releases are coordinated with `spec/vectors.json` `spec_version`: see
 
 ## [Unreleased]
 
+### Added
+
+- A cross-language parity test (`src/spec/warning-codes.test.ts`) that reads
+  `spec/schema.json` and asserts the `WarningCode` union matches it.
+
+### Fixed
+
+- **Breaking for consumers matching on warning codes:** `extractRouting`
+  reported `MEMO_TEXT_UNROUTABLE` for a `hash` or `return` memo and for any
+  unrecognized memo type. It now reports `UNSUPPORTED_MEMO_TYPE` with the
+  `context.memoType` that `spec/schema.json` requires and that core-go and
+  core-dart already emitted (#76). `MEMO_TEXT_UNROUTABLE` is now reserved for
+  a `MEMO_TEXT` value that is not a numeric uint64.
+- `@stellar/stellar-sdk` v17 removed its default export, so
+  `import StellarSdk from "@stellar/stellar-sdk"` left `StrKey` undefined and
+  12 test files failed to load. Switched to the named import.
+- `extractFromURI.ts` declared `sanitizeSep7UriForLogging` twice (a bad merge),
+  which is a hard esbuild error. Kept the documented implementation.
+- The spec runner did not account for the legacy 50-character placeholder
+  addresses in `spec/vectors.json`, which no implementation can parse.
+  core-dart already substitutes canonical addresses and core-go skips those
+  vectors; core-ts now substitutes identically. It also stopped asserting
+  that a C-destination throws, which contradicted the vector's expected
+  `INVALID_DESTINATION` result.
+
 ## [1.2.0] - 2026-09-24
 
 Implements spec `1.2.0`.

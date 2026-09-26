@@ -11,7 +11,6 @@ import 'extract.dart';
 import 'routing_result.dart';
 
 const _scheme = 'web+stellar';
-
 /// Reasons a SEP-0007 URI could not be turned into a routing result.
 enum UriRoutingErrorCode {
   /// The input is not a parseable URI, or does not use the `web+stellar:` scheme.
@@ -28,19 +27,46 @@ enum UriRoutingErrorCode {
 }
 
 /// Decoded parameters of a SEP-0007 `pay` URI.
+///
+/// Every field except [destination] is optional; an absent parameter is
+/// `null` rather than an empty string. Values are percent-decoded, and
+/// [memoType] keeps its wire spelling (e.g. `MEMO_ID`) rather than the
+/// internal routing type (`id`).
 class Sep7PayParams {
+  /// The `destination` query parameter. Required, and already trimmed.
   final String destination;
+
+  /// The requested `amount`, as written.
   final String? amount;
+
+  /// The asset code, e.g. `USDC`.
   final String? assetCode;
+
+  /// The asset issuer G-address.
   final String? assetIssuer;
+
+  /// The raw `memo` value, if present.
   final String? memo;
+
+  /// The SEP-0007 `memo_type` spelling, e.g. `MEMO_ID`.
   final String? memoType;
+
+  /// A URL the wallet should call after payment.
   final String? callback;
+
+  /// A human-readable message to display.
   final String? msg;
+
+  /// The network passphrase hint, when the sender pins one.
   final String? networkPassphrase;
+
+  /// The origin domain of the request, for domain-signed requests.
   final String? originDomain;
+
+  /// The signature over the request, when present.
   final String? signature;
 
+  /// Creates a parameter set; only [destination] is required.
   const Sep7PayParams({
     required this.destination,
     this.amount,
@@ -63,9 +89,16 @@ class Sep7PayParams {
 /// content, so they are safe to log even when the URI carries memos or
 /// signatures.
 final class UriRoutingResult {
+  /// The routing result; non-null exactly when [isSuccess] is true.
   final RoutingResult? routing;
+
+  /// The decoded query parameters; non-null exactly when [isSuccess] is true.
   final Sep7PayParams? params;
+
+  /// Why parsing failed; non-null exactly when [isSuccess] is false.
   final UriRoutingErrorCode? errorCode;
+
+  /// A URI-content-free description of [errorCode].
   final String? errorMessage;
 
   const UriRoutingResult._success(RoutingResult this.routing, Sep7PayParams this.params)
@@ -76,6 +109,7 @@ final class UriRoutingResult {
       : routing = null,
         params = null;
 
+  /// Whether the URI was parsed into a [routing] result.
   bool get isSuccess => errorCode == null;
 
   @override
@@ -98,9 +132,20 @@ final class UriRoutingResult {
 /// ```
 UriRoutingResult extractRoutingFromUriString(
   String uriString, {
-  WarningSeverity? minSeverityLevel,
+  String? minSeverityLevel,
 }) {
   final trimmed = uriString.trim();
+
+  // Checked against the raw string, before `Uri.parse` runs: the parser
+  // normalizes a malformed escape such as `%zz` into `%25zz`, which would
+  // otherwise hide the very defect we want to report.
+  if (!_hasWellFormedPercentEncoding(_rawQueryOf(trimmed))) {
+    return const UriRoutingResult._failure(
+      UriRoutingErrorCode.invalidEncoding,
+      'Failed to decode URI query parameters.',
+    );
+  }
+
   final Uri uri;
   try {
     uri = Uri.parse(trimmed);
@@ -129,7 +174,7 @@ UriRoutingResult extractRoutingFromUriString(
 /// Never throws: malformed input yields a failed [UriRoutingResult].
 UriRoutingResult extractRoutingFromUri(
   Uri uri, {
-  WarningSeverity? minSeverityLevel,
+  String? minSeverityLevel,
 }) {
   if (uri.scheme.toLowerCase() != _scheme) {
     return const UriRoutingResult._failure(
@@ -208,4 +253,38 @@ String _mapMemoType(String? sep7MemoType) {
     default:
       return 'none';
   }
+}
+
+/// Returns the raw (still percent-encoded) query string of [rawUri], or an
+/// empty string when it carries no `?`.
+String _rawQueryOf(String rawUri) {
+  final queryIndex = rawUri.indexOf('?');
+  if (queryIndex == -1) return '';
+  return rawUri.substring(queryIndex + 1);
+}
+
+bool _isHexDigit(int codeUnit) =>
+    (codeUnit >= 0x30 && codeUnit <= 0x39) || // 0-9
+    (codeUnit >= 0x41 && codeUnit <= 0x46) || // A-F
+    (codeUnit >= 0x61 && codeUnit <= 0x66); // a-f
+
+/// Reports whether every `%` in [rawQuery] introduces a complete two-digit
+/// percent-escape.
+///
+/// `Uri.queryParametersAll` is deliberately lenient: it leaves `%zz` and a
+/// bare trailing `%` in place instead of failing. A SEP-0007 URI carrying
+/// those is malformed, and passing a half-decoded `memo` downstream would
+/// hand consumers a value the sender never encoded. Rejecting them here keeps
+/// [UriRoutingErrorCode.invalidEncoding] reachable for the case it exists for.
+bool _hasWellFormedPercentEncoding(String rawQuery) {
+  for (var i = 0; i < rawQuery.length; i++) {
+    if (rawQuery.codeUnitAt(i) != 0x25) continue; // '%'
+    if (i + 2 >= rawQuery.length) return false;
+    if (!_isHexDigit(rawQuery.codeUnitAt(i + 1)) ||
+        !_isHexDigit(rawQuery.codeUnitAt(i + 2))) {
+      return false;
+    }
+    i += 2;
+  }
+  return true;
 }

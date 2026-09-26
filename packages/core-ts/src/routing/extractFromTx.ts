@@ -1,8 +1,5 @@
-import StellarSdk from "@stellar/stellar-sdk";
 import { RoutingResult } from "./types";
 import { extractRouting } from "./extract";
-
-const { Transaction } = StellarSdk;
 
 /**
  * Extracts routing information from a Stellar transaction.

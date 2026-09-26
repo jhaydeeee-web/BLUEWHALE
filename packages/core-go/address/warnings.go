@@ -6,6 +6,14 @@ import (
 	"fmt"
 )
 
+// WarningCode is the normative wire identifier of a non-blocking warning.
+//
+// Every value below is defined by spec/schema.json and is byte-for-byte
+// identical to the equivalent string constant in core-ts (the `WarningCode`
+// union in src/address/types.ts) and core-dart (`WarningCode` in
+// lib/src/address/codes.dart). Adding or renaming a code means changing all
+// three SDKs and the spec in the same commit; the cross-language audit lives
+// in packages/core-go/spec/warning_codes_test.go.
 type WarningCode string
 
 const (
@@ -20,6 +28,39 @@ const (
 	WarnInvalidDestination     WarningCode = "INVALID_DESTINATION"
 	WarnMissingRequiredMemo    WarningCode = "MISSING_REQUIRED_MEMO"
 )
+
+// AllWarningCodes lists every WarningCode this package can emit.
+//
+// The order matches spec/schema.json and the core-ts `WarningCode` union, so
+// the three SDKs can be diffed line by line.
+var AllWarningCodes = []WarningCode{
+	WarnNonCanonicalAddress,
+	WarnNonCanonicalRoutingID,
+	WarnMemoIgnoredForMuxed,
+	WarnMemoPresentWithMuxed,
+	WarnContractSenderDetected,
+	WarnMemoTextUnroutable,
+	WarnMemoIDInvalidFormat,
+	WarnUnsupportedMemoType,
+	WarnInvalidDestination,
+	WarnMissingRequiredMemo,
+}
+
+// String returns the wire representation of the code.
+func (c WarningCode) String() string {
+	return string(c)
+}
+
+// IsKnown reports whether c is one of [AllWarningCodes]. Useful for
+// validating codes arriving from an untrusted payload.
+func (c WarningCode) IsKnown() bool {
+	for _, known := range AllWarningCodes {
+		if c == known {
+			return true
+		}
+	}
+	return false
+}
 
 type Warning struct {
 	Code          WarningCode     `json:"code"`

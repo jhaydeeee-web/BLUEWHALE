@@ -7,10 +7,21 @@ analyzer:
     strict-raw-types: true
   errors:
     todo: ignore
+  exclude:
+    # A Flutter widget example. It imports `package:flutter/material.dart`,
+    # and Flutter is deliberately not a dependency of this package, so the
+    # analyzer cannot resolve any of its symbols here — every widget in the
+    # file reports `undefined_method`. Adding a Flutter dev_dependency just to
+    # analyze one sample file would pull the entire SDK into the test image.
+    #
+    # The real Flutter integration is `examples/flutter-demo`, which CI
+    # analyzes with `flutter analyze --fatal-infos` (see ci-flutter-demo.yml).
+    - example/flutter_form_example.dart
 
 linter:
   rules:
     - always_declare_return_types
+    - avoid_dynamic_calls
     - prefer_const_constructors
     - unawaited_futures
     - public_member_api_docs
