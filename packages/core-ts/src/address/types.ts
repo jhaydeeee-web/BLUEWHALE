@@ -4,9 +4,23 @@ export type AddressKind = "G" | "M" | "C";
 /**
  * Severity levels for validation warnings.
  * Used with `minSeverityLevel` to filter warnings by importance.
+ *
+ * The string union (rather than an enum) is deliberate: the wire format is
+ * `"info" | "warn" | "error"`, so an enum would force a conversion at every
+ * JSON boundary and break byte-level parity with core-go and core-dart.
  */
 export type WarningSeverity = "info" | "warn" | "error";
 
+/**
+ * Every warning code this SDK can emit.
+ *
+ * These identifiers are normative wire strings defined by
+ * `spec/schema.json` and are byte-for-byte identical to the equivalent
+ * constant in core-go (`address.WarnNonCanonicalAddress`, …) and core-dart
+ * (`WarningCode.nonCanonicalAddress`, …). Adding or renaming a code means
+ * changing all three SDKs and the spec in the same commit; the cross-language
+ * audit lives in `src/spec/warning-codes.test.ts`.
+ */
 export type WarningCode =
   | "NON_CANONICAL_ADDRESS"
   | "NON_CANONICAL_ROUTING_ID"

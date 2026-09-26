@@ -44,10 +44,11 @@ void main() {
   test('exception types are catchable by their exported names', () {
     expect(() => StellarAddress.parse(''),
         throwsA(isA<StellarAddressException>()));
-    expect(
-        () =>
-            extractRoutingSync(RoutingInput(destination: '', memoType: 'none')),
-        throwsA(isA<ExtractRoutingException>()));
+    // extractRoutingSync follows the zero-throw policy (issue #77): an empty
+    // destination is reported through `destinationError`, not an exception.
+    final result =
+        extractRoutingSync(RoutingInput(destination: '', memoType: 'none'));
+    expect(result.destinationError, isNotNull);
   });
 
   test('WarningSeverity matches the severities emitted by the library', () {

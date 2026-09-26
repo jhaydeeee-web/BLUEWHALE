@@ -9,6 +9,7 @@
 // Run locally:
 //   dart test test/web_compat --platform chrome
 @TestOn('browser')
+library;
 
 import 'dart:convert';
 

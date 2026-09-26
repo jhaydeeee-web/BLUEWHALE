@@ -38,7 +38,15 @@ abstract final class ErrorCode {
   static const unknownPrefix = 'UNKNOWN_PREFIX';
 }
 
-/// Warning codes returned when an address is valid but has non-standard properties.
+/// Warning codes returned when an address is valid but has non-standard
+/// properties.
+///
+/// Every value here is a normative wire string defined by
+/// `spec/schema.json` and is byte-for-byte identical to the equivalent
+/// constant in core-ts (`WarningCode`) and core-go
+/// (`address.WarnNonCanonicalAddress` and friends). Adding or renaming a code
+/// means changing all three SDKs and the spec in the same commit; the
+/// cross-language audit lives in `test/warning_code_parity_test.dart`.
 abstract final class WarningCode {
   /// The address has non-canonical casing (usually lowercase).
   static const nonCanonicalAddress = 'NON_CANONICAL_ADDRESS';
@@ -66,13 +74,45 @@ abstract final class WarningCode {
 
   /// The destination is a smart contract, which is invalid for classic payments.
   static const invalidDestination = 'INVALID_DESTINATION';
+
+  /// The destination requires a memo (SEP-0029) but none supplied a routing ID.
+  static const missingRequiredMemo = 'MISSING_REQUIRED_MEMO';
+
+  /// Every warning code this SDK can emit, in the order declared by
+  /// `spec/schema.json`.
+  ///
+  /// Use this to validate codes arriving from the wire:
+  /// `WarningCode.values.contains(json['code'])`.
+  static const values = <String>[
+    nonCanonicalAddress,
+    nonCanonicalRoutingId,
+    memoIgnoredForMuxed,
+    memoPresentWithMuxed,
+    contractSenderDetected,
+    memoTextUnroutable,
+    memoIdInvalidFormat,
+    unsupportedMemoType,
+    invalidDestination,
+    missingRequiredMemo,
+  ];
+
+  /// Returns `true` when [code] is one of the normative [values].
+  static bool isKnown(String code) => values.contains(code);
+
+  /// Returns the [WarningCode] matching [code], or `null` when it is not a
+  /// normative warning code.
+  static String? tryParse(String code) => isKnown(code) ? code : null;
 }
 
 /// Severity levels carried by [Warning.severity] and `RoutingWarning.severity`.
 ///
 /// Severities are plain strings so they serialize identically to the
 /// TypeScript and Go implementations; compare against these constants rather
-/// than hard-coding the literals.
+/// than hard-coding the literals. core-ts models them as the union
+/// `"info" | "warn" | "error"` and core-go as a bare `string`, so the
+/// Dart package deliberately avoids an enum here: an enum would force a
+/// conversion at every JSON boundary and break byte-level parity of
+/// `RoutingResult.toJson()`.
 ///
 /// ```dart
 /// final result = extractRoutingSync(input);
@@ -90,7 +130,17 @@ abstract final class WarningSeverity {
   static const error = 'error';
 
   /// All severities, ordered from least to most severe.
-  static const values = [info, warn, error];
+  static const values = <String>[info, warn, error];
+
+  /// Returns the matching severity string, or `null` for an unrecognized
+  /// value.
+  ///
+  /// ```dart
+  /// WarningSeverity.tryParse('warn');   // 'warn'
+  /// WarningSeverity.tryParse('fatal');  // null
+  /// ```
+  static String? tryParse(String value) =>
+      values.contains(value) ? value : null;
 }
 
 /// Represents a warning encountered during address parsing or routing.
@@ -133,6 +183,12 @@ class Normalization {
 }
 
 /// Contextual details for specific warning types.
+///
+/// `spec/schema.json` couples these fields to the warning code:
+/// `INVALID_DESTINATION` allows only `destinationKind: 'C'`, and
+/// `UNSUPPORTED_MEMO_TYPE` allows only `memoType` in
+/// `hash | return | unknown`. `additionalProperties: false` means a context
+/// carrying both fields is rejected, so never populate both.
 class WarningContext {
   /// The kind of destination address (G, M, or C).
   final String? destinationKind;
@@ -141,7 +197,29 @@ class WarningContext {
   final String? memoType;
 
   /// Creates a context; every field is optional.
-  WarningContext({this.destinationKind, this.memoType});
+  const WarningContext({this.destinationKind, this.memoType});
+
+  /// Serializes this context, omitting fields that were never set so the
+  /// output matches the schema's `required` lists exactly.
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      if (destinationKind != null) 'destinationKind': destinationKind,
+      if (memoType != null) 'memoType': memoType,
+    };
+  }
+
+  @override
+  String toString() => 'WarningContext(${toJson()})';
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is WarningContext &&
+          destinationKind == other.destinationKind &&
+          memoType == other.memoType;
+
+  @override
+  int get hashCode => Object.hash(destinationKind, memoType);
 }
 
 /// The result of parsing a raw Stellar address string.

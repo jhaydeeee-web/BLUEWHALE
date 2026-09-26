@@ -143,7 +143,7 @@ void main() {
   });
 
   group('RoutingInput.minSeverityLevel', () {
-    RoutingResult run(WarningSeverity? level) => extractRoutingSync(
+    RoutingResult run(String? level) => extractRoutingSync(
           RoutingInput(
             destination: muxedAddress,
             memoType: 'text',
@@ -155,14 +155,14 @@ void main() {
     test('null returns all warnings', () {
       expect(
         run(null).warnings.map((w) => w.code),
-        ['memo-ignored', WarningCode.memoTextUnroutable],
+        [WarningCode.memoIgnoredForMuxed, WarningCode.memoTextUnroutable],
       );
     });
 
     test('info returns all warnings', () {
       expect(
         run(WarningSeverity.info).warnings.map((w) => w.code),
-        ['memo-ignored', WarningCode.memoTextUnroutable],
+        [WarningCode.memoIgnoredForMuxed, WarningCode.memoTextUnroutable],
       );
     });
 

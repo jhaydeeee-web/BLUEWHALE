@@ -79,7 +79,7 @@ void main() {
       expect(result.source, RoutingSource.memo);
       expect(result.destinationError, isNull);
       expect(result.warnings, hasLength(1));
-      expect(result.warnings.first.code, 'memo-ignored');
+      expect(result.warnings.first.code, WarningCode.memoIgnoredForMuxed);
     });
 
     test('keeps muxed decode valid when external memo is unroutable', () {
@@ -97,7 +97,7 @@ void main() {
       expect(result.destinationError, isNull);
       expect(
         result.warnings.map((warning) => warning.code),
-        ['memo-ignored', 'MEMO_TEXT_UNROUTABLE'],
+        [WarningCode.memoIgnoredForMuxed, WarningCode.memoTextUnroutable],
       );
     });
 
@@ -167,7 +167,7 @@ void main() {
             result.source == RoutingSource.memo &&
             result.destinationError == null &&
             result.warnings.length == 1 &&
-            result.warnings.first.code == 'memo-ignored')),
+            result.warnings.first.code == WarningCode.memoIgnoredForMuxed)),
       );
     });
 
@@ -184,8 +184,8 @@ void main() {
             result.source == RoutingSource.none &&
             result.destinationError == null &&
             result.warnings.length == 2 &&
-            result.warnings[0].code == 'memo-ignored' &&
-            result.warnings[1].code == 'MEMO_TEXT_UNROUTABLE')),
+            result.warnings[0].code == WarningCode.memoIgnoredForMuxed &&
+            result.warnings[1].code == WarningCode.memoTextUnroutable)),
       );
     });
 

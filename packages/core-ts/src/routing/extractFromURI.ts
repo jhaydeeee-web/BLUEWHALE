@@ -118,45 +118,6 @@ function mapMemoType(sep7MemoType: string | undefined): RoutingInput["memoType"]
  * }
  * ```
  */
-/**
- * Sensitive query parameter keys that must be redacted in error messages and logs.
- */
-const SENSITIVE_PARAM_KEYS = new Set([
-  "signature",
-  "callback",
-  "memo",
-  "msg",
-]);
-
-/**
- * Sanitizes a URI or query string for logging and error descriptions
- * by redacting sensitive parameters (signature, callback, memo, msg).
- */
-export function sanitizeSep7UriForLogging(uriOrText: string): string {
-  if (!uriOrText) return uriOrText;
-
-  const qIndex = uriOrText.indexOf("?");
-  if (qIndex === -1 && !uriOrText.includes("=")) {
-    return uriOrText;
-  }
-
-  const prefix = qIndex !== -1 ? uriOrText.slice(0, qIndex + 1) : "";
-  const query = qIndex !== -1 ? uriOrText.slice(qIndex + 1) : uriOrText;
-
-  const pairs = query.split("&");
-  const sanitizedPairs = pairs.map((pair) => {
-    const eqIndex = pair.indexOf("=");
-    if (eqIndex === -1) return pair;
-    const key = pair.slice(0, eqIndex);
-    const lowerKey = key.toLowerCase();
-    if (SENSITIVE_PARAM_KEYS.has(lowerKey)) {
-      return `${key}=[REDACTED]`;
-    }
-    return pair;
-  });
-
-  return `${prefix}${sanitizedPairs.join("&")}`;
-}
 
 export function extractRoutingFromURI(uriString: string): ExtractRoutingFromURIResult {
   // 1. Validate scheme
